@@ -12,3 +12,4 @@ class Invitation(Base):
     channel = Column(String)
     sent_at = Column(DateTime, default=datetime.utcnow)
     clicked_at = Column(DateTime, nullable=True)
+    tracking_id = Column(UUID(as_uuid=True))

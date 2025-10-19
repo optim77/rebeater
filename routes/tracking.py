@@ -9,7 +9,7 @@ from models.click import Click
 from models.invitation import Invitation
 
 router = APIRouter(prefix="/r", tags=["tracking"])
-
+# TODO: make service to short and redirect links for google_review_link
 @router.get("/{invite_id}")
 def track(invite_id: str, request: Request, db: Session = Depends(get_db)):
     invitation = db.query(Invitation).filter(Invitation.id == invite_id).first()

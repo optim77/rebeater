@@ -14,4 +14,5 @@ class Company(Base):
     google_review_link = Column(String)
     owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     owner = relationship("User", back_populates="companies")
+    clients = relationship("Client", back_populates="company", cascade="all, delete-orphan")
 
