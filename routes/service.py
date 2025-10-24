@@ -1,46 +1,36 @@
-from fastapi import APIRouter, Depends, Query, HTTPException
-from fastapi_pagination import Page, Params
-from fastapi_pagination.ext.sqlalchemy import paginate
-from pydantic import BaseModel
-from sqlalchemy.orm import Session
-
 import uuid
 
+from fastapi import APIRouter, HTTPException
+from fastapi.params import Depends, Query
+from fastapi_pagination import Params
+from pydantic import BaseModel
 from sqlalchemy import or_
+from sqlalchemy.orm import Session
 from starlette import status
-
+from fastapi_pagination.ext.sqlalchemy import paginate
 from database import get_db
-from models.client import Client
 from models.company import Company
+from models.services import Service
 from utils.security import get_current_user
 
-router = APIRouter(prefix="/clients", tags=["clients"])
+router = APIRouter(prefix="/service", tags=["service"])
 
-class CreateClient(BaseModel):
+class CreateService(BaseModel):
     name: str
-    email: str
-    phone: str
-    company: uuid.UUID
+    description: str
+    company_id: uuid.UUID
 
-class ClientOut(BaseModel):
+class ServiceOut(BaseModel):
     id: uuid.UUID
     name: str
-    email: str
-    phone: str
+    description: str
     company_id: uuid.UUID
 
     class Config:
-        from_attributes = True
+        from_attribute = True
 
 
-@router.post("/")
-def add_client(client: CreateClient, db: Session =  Depends(get_db)):
-    client = Client(id=uuid.uuid4(), name=client.name, email=client.email, phone=client.phone, company_id=client.company)
-    db.add(client)
-    db.commit()
-    return client
-
-@router.get("/{company_id}", response_model=Page[ClientOut])
+@router.get("/", response_model=ServiceOut)
 def list_clients(
         company_id: uuid.UUID,
         search_term: str = Query(None),
@@ -48,30 +38,26 @@ def list_clients(
         db: Session = Depends(get_db),
         current_user = Depends(get_current_user)
 ):
-
-    # TODO: Get out this function to generic one
     company = db.query(Company).filter(Company.id == company_id,Company.owner_id == current_user.id).first()
     if not company:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
 
-
-    query = db.query(Client).filter(Client.company_id == company_id)
+    query = db.query(Service).filter(Service.company_id == company_id)
 
     if search_term:
         query = query.filter(
             or_(
-                Client.name.ilike(f"%{search_term}%"),
-                Client.email.ilike(f"%{search_term}%"),
-                Client.phone.ilike(f"%{search_term}%"),
+                Service.name.ilike(f"%{search_term}%"),
+                Service.description.ilike(f"%{search_term}%"),
             )
         )
 
     return paginate(query, params)
 
-@router.get("/{company_id}/{client_id}", response_model=ClientOut)
+@router.get("/{company_id}/{service_id}", response_model=ServiceOut)
 def get_client(
         company_id: uuid.UUID,
-        client_id: uuid.UUID,
+        service_id: uuid.UUID,
         current_user = Depends(get_current_user),
         db: Session = Depends(get_db)
 ):
@@ -79,17 +65,26 @@ def get_client(
     if not company:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
 
-    client = db.query(Client).filter(Client.id == client_id).first()
+    client = db.query(Service).filter(Service.id == service_id).first()
     if not client:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Service not found")
 
     return client
 
-@router.put("/{company_id}/{client_id}", response_model=ClientOut)
+
+@router.post("/", response_model=ServiceOut)
+def add_service(service: CreateService, db: Session = Depends(get_db)):
+    service = Service(id=uuid.uuid4(), name=service.name, description=service.description, company_id=service.company_id)
+    db.add(service)
+    db.commit()
+    return service
+
+
+@router.put("/{company_id}/{service_id}", response_model=ServiceOut)
 def update_client(
         company_id: uuid.UUID,
-        client_id: uuid.UUID,
-        client_update: CreateClient,
+        service_id: uuid.UUID,
+        service_update: CreateService,
         current_user = Depends(get_current_user),
         db: Session = Depends(get_db)
 ):
@@ -98,21 +93,21 @@ def update_client(
     if not company:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
 
-    client = db.query(Client).filter(Client.id == client_id).first()
-    if not client:
+    service = db.query(Service).filter(Service.id == service_id).first()
+    if not service:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
 
-    for key, value in client_update.dict().items():
-        setattr(client, key, value)
+    for key, value in service_update.dict().items():
+        setattr(service, key, value)
     db.commit()
-    db.refresh(client)
-    return client
+    db.refresh(service)
+    return service
 
 
-@router.delete("/{company_id}/{client_id}")
-def delete_client(
+@router.delete("/{company_id}/{service_id}")
+def delete_service(
         company_id: uuid.UUID,
-        client_id: uuid.UUID,
+        service_id: uuid.UUID,
         current_user = Depends(get_current_user),
         db: Session = Depends(get_db)):
 
@@ -121,9 +116,9 @@ def delete_client(
     if not company:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
 
-    client = db.query(Client).filter(Client.id == client_id).first()
-    if not client:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
-    db.delete(client)
+    service = db.query(Service).filter(Service.id == service_id).first()
+    if not service:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Service not found")
+    db.delete(service)
     db.commit()
-    return {"detail": "Client deleted successfully"}
+    return {"detail": "Service deleted successfully"}

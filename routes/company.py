@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from fastapi_pagination import Page, paginate, Params
+from fastapi_pagination import Page, Params
+from fastapi_pagination.ext.sqlalchemy import paginate
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from typing import Optional
 from models.company import Company
 from database import get_db
-from routes.utils import PaginatedResponse
 from utils.security import get_current_user
 from pydantic import BaseModel
 from uuid import UUID
@@ -27,7 +27,7 @@ class CompanyOut(BaseModel):
     owner_id: UUID
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 
@@ -35,6 +35,7 @@ class CompanyOut(BaseModel):
 def create_company(company: CompanyCreate,
                    db: Session = Depends(get_db),
                    current_user=Depends(get_current_user)):
+    # TODO: validation
     db_company = Company(
         name=company.name,
         description=company.description,
