@@ -27,15 +27,14 @@ class ClientOut(BaseModel):
     name: str
     email: str
     phone: str
-    company_id: uuid.UUID
 
     class Config:
         from_attributes = True
 
 
-@router.post("/")
-def add_client(client: CreateClient, db: Session =  Depends(get_db)):
-    client = Client(id=uuid.uuid4(), name=client.name, email=client.email, phone=client.phone, company_id=client.company)
+@router.post("/{company_id}")
+def add_client(company_id: str, client: CreateClient, db: Session =  Depends(get_db)):
+    client = Client(id=uuid.uuid4(), name=client.name, email=client.email, phone=client.phone, company_id=company_id)
     db.add(client)
     db.commit()
     return client

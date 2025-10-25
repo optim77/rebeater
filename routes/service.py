@@ -13,12 +13,11 @@ from models.company import Company
 from models.services import Service
 from utils.security import get_current_user
 
-router = APIRouter(prefix="/service", tags=["service"])
+router = APIRouter(prefix="/services", tags=["service"])
 
 class CreateService(BaseModel):
     name: str
     description: str
-    company_id: uuid.UUID
 
 class ServiceOut(BaseModel):
     id: uuid.UUID
@@ -29,33 +28,8 @@ class ServiceOut(BaseModel):
     class Config:
         from_attribute = True
 
-
-@router.get("/", response_model=ServiceOut)
-def list_clients(
-        company_id: uuid.UUID,
-        search_term: str = Query(None),
-        params: Params = Depends(),
-        db: Session = Depends(get_db),
-        current_user = Depends(get_current_user)
-):
-    company = db.query(Company).filter(Company.id == company_id,Company.owner_id == current_user.id).first()
-    if not company:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
-
-    query = db.query(Service).filter(Service.company_id == company_id)
-
-    if search_term:
-        query = query.filter(
-            or_(
-                Service.name.ilike(f"%{search_term}%"),
-                Service.description.ilike(f"%{search_term}%"),
-            )
-        )
-
-    return paginate(query, params)
-
 @router.get("/{company_id}/{service_id}", response_model=ServiceOut)
-def get_client(
+def get_service(
         company_id: uuid.UUID,
         service_id: uuid.UUID,
         current_user = Depends(get_current_user),
@@ -72,9 +46,34 @@ def get_client(
     return client
 
 
-@router.post("/", response_model=ServiceOut)
-def add_service(service: CreateService, db: Session = Depends(get_db)):
-    service = Service(id=uuid.uuid4(), name=service.name, description=service.description, company_id=service.company_id)
+@router.get("/${company_id}", response_model=ServiceOut)
+def list_services(
+        company_id: uuid.UUID,
+        search_term: str = Query(None),
+        params: Params = Depends(),
+        db: Session = Depends(get_db),
+        current_user = Depends(get_current_user)
+):
+    company = db.query(Company).filter(Company.id == company_id, Company.owner_id == current_user.id).first()
+    if not company:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
+
+    query = db.query(Service).filter(Service.company_id == company_id)
+
+    if search_term:
+        query = query.filter(
+            or_(
+                Service.name.ilike(f"%{search_term}%"),
+                Service.description.ilike(f"%{search_term}%"),
+            )
+        )
+
+    return paginate(query, params)
+
+
+@router.post("/{company_id}", response_model=ServiceOut)
+def add_service(company_id: str, service: CreateService, db: Session = Depends(get_db)):
+    service = Service(id=uuid.uuid4(), name=service.name, description=service.description, company_id=company_id)
     db.add(service)
     db.commit()
     return service
