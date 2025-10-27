@@ -3,6 +3,7 @@ import uuid
 from fastapi import APIRouter, HTTPException
 from fastapi.params import Depends, Query
 from fastapi_pagination import Params
+from fastapi_pagination.links import Page
 from pydantic import BaseModel
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
@@ -46,7 +47,7 @@ def get_service(
     return client
 
 
-@router.get("/${company_id}", response_model=ServiceOut)
+@router.get("/{company_id}", response_model=Page[ServiceOut])
 def list_services(
         company_id: uuid.UUID,
         search_term: str = Query(None),
