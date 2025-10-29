@@ -15,6 +15,9 @@ class Company(Base):
     instagram_link = Column(String)
     linkedin_link = Column(String)
     tiktok_link = Column(String)
+    znany_lekarz = Column(String)
+    booksy = Column(String)
+
 
     owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
 

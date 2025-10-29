@@ -16,3 +16,4 @@ class Client(Base):
     company_id = Column(UUID(as_uuid=True), ForeignKey('companies.id', ondelete='CASCADE'), nullable=False)
 
     company = relationship("Company", back_populates="clients")
+    messages = relationship("Message", back_populates="client", cascade="all, delete-orphan")

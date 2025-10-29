@@ -14,6 +14,14 @@ class Respond(enum.Enum):
     negativeResponse = "negativeResponse"
     messageClicked = "messageClicked"
 
+class Portal(enum.Enum):
+    google = "google"
+    facebook = "facebook"
+    instagram = "instagram"
+    znany_lekarz = "znany_lekarz"
+    booksy = "booksy"
+    linkedin = "linkedin"
+    tiktok = "tiktok"
 
 class MessageType(enum.Enum):
     Email = "email"
@@ -29,11 +37,12 @@ class Message(Base):
     send_at = Column(DateTime, nullable=False)
     messageType = Column(Enum(MessageType, name="message_type_enum"), nullable=False)
     responded = Column(Enum(Respond, name="respond_enum"), nullable=True)
+    portal = Column(Enum(Portal, name="portal_enum"), nullable=True)
     feedback = Column(String, nullable=True)
 
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    client_id = Column(UUID(as_uuid=True), ForeignKey("clients.id", ondelete="CASCADE"), nullable=False)
     company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="CASCADE"), nullable=True)
 
-    user = relationship("User", back_populates="messages")
+    client = relationship("Client", back_populates="messages")
     company = relationship("Company", back_populates="messages")
 

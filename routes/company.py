@@ -14,7 +14,14 @@ router = APIRouter(prefix="/companies", tags=["Companies"])
 
 class CompanyCreate(BaseModel):
     name: str
-    description: str = None
+    description: Optional[str] = None
+    google_review_link: Optional[str] = None
+    facebook_url: Optional[str] = None
+    instagram_link: Optional[str] = None
+    linkedin_link: Optional[str] = None
+    tiktok_link: Optional[str] = None
+    znany_lekarz: Optional[str] = None
+    booksy_link: Optional[str] = None
 
 class CompanyUpdate(BaseModel):
     name: str = None
@@ -23,8 +30,15 @@ class CompanyUpdate(BaseModel):
 class CompanyOut(BaseModel):
     id: UUID
     name: str
-    description: str = None
+    description: Optional[str] = None
     owner_id: UUID
+    google_review_link: Optional[str] = None
+    facebook_url: Optional[str] = None
+    instagram_link: Optional[str] = None
+    linkedin_link: Optional[str] = None
+    tiktok_link: Optional[str] = None
+    znany_lekarz: Optional[str] = None
+    booksy_link: Optional[str] = None
 
     class Config:
         from_attributes = True

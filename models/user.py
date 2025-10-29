@@ -17,4 +17,4 @@ class User(Base):
 
     companies = relationship("Company", back_populates="owner", cascade="all, delete-orphan")
 
-    messages = relationship("Message", back_populates="user", cascade="all, delete-orphan")
+
