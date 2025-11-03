@@ -17,3 +17,4 @@ class Client(Base):
 
     company = relationship("Company", back_populates="clients")
     messages = relationship("Message", back_populates="client", cascade="all, delete-orphan")
+    invitation = relationship("Invitation", back_populates="client", cascade="all, delete-orphan")

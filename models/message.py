@@ -32,7 +32,6 @@ class Message(Base):
     __tablename__ = "messages"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    invitation_id = Column(UUID(as_uuid=True), unique=True, default=uuid.uuid4, nullable=False)
     message = Column(String, nullable=False)
     send_at = Column(DateTime, nullable=False)
     messageType = Column(Enum(MessageType, name="message_type_enum"), nullable=False)
@@ -45,4 +44,5 @@ class Message(Base):
 
     client = relationship("Client", back_populates="messages")
     company = relationship("Company", back_populates="messages")
+    invitation = relationship("Invitation", back_populates="message", uselist=False)
 

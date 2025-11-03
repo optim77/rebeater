@@ -16,11 +16,13 @@ from utils.security import get_current_user
 
 router = APIRouter(prefix="/clients", tags=["clients"])
 
+
 class CreateClient(BaseModel):
     name: str
     email: str
     phone: str
     company: uuid.UUID
+
 
 class ClientOut(BaseModel):
     id: uuid.UUID
@@ -33,11 +35,12 @@ class ClientOut(BaseModel):
 
 
 @router.post("/{company_id}")
-def add_client(company_id: str, client: CreateClient, db: Session =  Depends(get_db)):
+def add_client(company_id: str, client: CreateClient, db: Session = Depends(get_db)):
     client = Client(id=uuid.uuid4(), name=client.name, email=client.email, phone=client.phone, company_id=company_id)
     db.add(client)
     db.commit()
     return client
+
 
 @router.get("/{company_id}", response_model=Page[ClientOut])
 def list_clients(
@@ -45,14 +48,12 @@ def list_clients(
         search_term: str = Query(None),
         params: Params = Depends(),
         db: Session = Depends(get_db),
-        current_user = Depends(get_current_user)
+        current_user=Depends(get_current_user)
 ):
-
     # TODO: Get out this function to generic one
-    company = db.query(Company).filter(Company.id == company_id,Company.owner_id == current_user.id).first()
+    company = db.query(Company).filter(Company.id == company_id, Company.owner_id == current_user.id).first()
     if not company:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
-
 
     query = db.query(Client).filter(Client.company_id == company_id)
 
@@ -67,14 +68,15 @@ def list_clients(
 
     return paginate(query, params)
 
+
 @router.get("/{company_id}/{client_id}", response_model=ClientOut)
 def get_client(
         company_id: uuid.UUID,
         client_id: uuid.UUID,
-        current_user = Depends(get_current_user),
+        current_user=Depends(get_current_user),
         db: Session = Depends(get_db)
 ):
-    company = db.query(Company).filter(Company.id == company_id,Company.owner_id == current_user.id).first()
+    company = db.query(Company).filter(Company.id == company_id, Company.owner_id == current_user.id).first()
     if not company:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
 
@@ -89,10 +91,9 @@ def update_client(
         company_id: uuid.UUID,
         client_id: uuid.UUID,
         client_update: CreateClient,
-        current_user = Depends(get_current_user),
+        current_user=Depends(get_current_user),
         db: Session = Depends(get_db)
 ):
-
     company = db.query(Company).filter(Company.id == company_id, Company.owner_id == current_user.id).first()
     if not company:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
@@ -112,10 +113,8 @@ def update_client(
 def delete_client(
         company_id: uuid.UUID,
         client_id: uuid.UUID,
-        current_user = Depends(get_current_user),
+        current_user=Depends(get_current_user),
         db: Session = Depends(get_db)):
-
-
     company = db.query(Company).filter(Company.id == company_id, Company.owner_id == current_user.id).first()
     if not company:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")

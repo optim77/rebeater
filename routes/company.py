@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi_pagination import Page, Params
 from fastapi_pagination.ext.sqlalchemy import paginate
@@ -12,6 +14,7 @@ from uuid import UUID
 
 router = APIRouter(prefix="/companies", tags=["Companies"])
 
+
 class CompanyCreate(BaseModel):
     name: str
     description: Optional[str] = None
@@ -23,9 +26,11 @@ class CompanyCreate(BaseModel):
     znany_lekarz: Optional[str] = None
     booksy_link: Optional[str] = None
 
+
 class CompanyUpdate(BaseModel):
     name: str = None
     description: str = None
+
 
 class CompanyOut(BaseModel):
     id: UUID
@@ -44,7 +49,6 @@ class CompanyOut(BaseModel):
         from_attributes = True
 
 
-
 @router.post("/", response_model=CompanyOut)
 def create_company(company: CompanyCreate,
                    db: Session = Depends(get_db),
@@ -60,12 +64,13 @@ def create_company(company: CompanyCreate,
     db.refresh(db_company)
     return db_company
 
+
 @router.get("/", response_model=Page[CompanyOut])
 def list_companies(
-    search_term: Optional[str] = Query(None),
-    params: Params = Depends(),
-    db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+        search_term: Optional[str] = Query(None),
+        params: Params = Depends(),
+        db: Session = Depends(get_db),
+        current_user=Depends(get_current_user),
 ):
     query = db.query(Company).filter(Company.owner_id == current_user.id)
 
@@ -93,6 +98,27 @@ def get_company(company_id: UUID,
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
     return company
 
+
+@router.get("/{company_id}/socials")
+def get_socials(
+        company_id: uuid.UUID,
+        current_user=Depends(get_current_user),
+        db: Session = Depends(get_db)
+):
+    company = db.query(Company).filter(Company.id == company_id, Company.owner_id == current_user.id).first()
+    if not company:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
+    return {
+        "google": company.google_review_link,
+        "facebook": company.facebook_url,
+        "instagram": company.instagram_link,
+        "tiktok": company.tiktok_link,
+        "linkedin": company.linkedin_link,
+        "booksy": company.booksy,
+        "znany_lekarz": company.znany_lekarz
+    }
+
+
 @router.put("/{company_id}", response_model=CompanyOut)
 def update_company(company_id: UUID,
                    company_update: CompanyUpdate,
@@ -113,6 +139,7 @@ def update_company(company_id: UUID,
     db.commit()
     db.refresh(company)
     return company
+
 
 @router.delete("/{company_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_company(company_id: UUID,
