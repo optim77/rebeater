@@ -1,31 +1,13 @@
-import enum
 import uuid
-from datetime import datetime
 
 from sqlalchemy import Column, String, DateTime, Enum, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from database import Base
-
-
-class Respond(enum.Enum):
-    positiveResponse = "positiveResponse"
-    negativeResponse = "negativeResponse"
-    messageClicked = "messageClicked"
-
-class Portal(enum.Enum):
-    google = "google"
-    facebook = "facebook"
-    instagram = "instagram"
-    znany_lekarz = "znany_lekarz"
-    booksy = "booksy"
-    linkedin = "linkedin"
-    tiktok = "tiktok"
-
-class MessageType(enum.Enum):
-    Email = "email"
-    SMS = "sms"
+from models.utils.messageType import MessageType
+from models.utils.portalType import Portal
+from models.utils.respondType import Respond
 
 
 class Message(Base):

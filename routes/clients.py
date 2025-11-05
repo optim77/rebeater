@@ -11,18 +11,22 @@ from starlette import status
 
 from database import get_db
 from models.client import Client
-from models.company import Company
-from utils.security import get_current_user
+from utils.db_transaction import db_transaction
+from utils.get_client_or_404 import get_client_or_404
+
+from utils.get_company import validate_company_access
 
 router = APIRouter(prefix="/clients", tags=["clients"])
-
 
 class CreateClient(BaseModel):
     name: str
     email: str
     phone: str
-    company: uuid.UUID
 
+class UpdateClient(BaseModel):
+    name: str | None = None
+    email: str | None = None
+    phone: str | None = None
 
 class ClientOut(BaseModel):
     id: uuid.UUID
@@ -34,28 +38,24 @@ class ClientOut(BaseModel):
         from_attributes = True
 
 
-@router.post("/{company_id}")
-def add_client(company_id: str, client: CreateClient, db: Session = Depends(get_db)):
+@router.post("/{company_id}", status_code=status.HTTP_201_CREATED)
+def add_client(company_id: uuid.UUID, client: CreateClient, db: Session = Depends(get_db)):
     client = Client(id=uuid.uuid4(), name=client.name, email=client.email, phone=client.phone, company_id=company_id)
-    db.add(client)
-    db.commit()
+    # TODO: Validate fields
+    with db_transaction(db):
+        db.add(client)
     return client
 
 
-@router.get("/{company_id}", response_model=Page[ClientOut])
+@router.get("/{company_id}", response_model=Page[ClientOut], status_code=status.HTTP_200_OK)
 def list_clients(
         company_id: uuid.UUID,
         search_term: str = Query(None),
         params: Params = Depends(),
         db: Session = Depends(get_db),
-        current_user=Depends(get_current_user)
+        _: None = Depends(validate_company_access)
 ):
-    # TODO: Get out this function to generic one
-    company = db.query(Company).filter(Company.id == company_id, Company.owner_id == current_user.id).first()
-    if not company:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
-
-    query = db.query(Client).filter(Client.company_id == company_id)
+    query = db.query(Client).filter_by(company_id=company_id)
 
     if search_term:
         query = query.filter(
@@ -69,57 +69,48 @@ def list_clients(
     return paginate(query, params)
 
 
-@router.get("/{company_id}/{client_id}", response_model=ClientOut)
+@router.get("/{company_id}/{client_id}", response_model=ClientOut, status_code=status.HTTP_200_OK)
 def get_client(
         company_id: uuid.UUID,
         client_id: uuid.UUID,
-        current_user=Depends(get_current_user),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        _: None = Depends(validate_company_access)
 ):
-    company = db.query(Company).filter(Company.id == company_id, Company.owner_id == current_user.id).first()
-    if not company:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
-
-    client = db.query(Client).filter(Client.id == client_id).first()
+    client = get_client_or_404(db, client_id, company_id)
     if not client:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
 
     return client
 
-@router.put("/{company_id}/{client_id}", response_model=ClientOut)
+@router.put("/{company_id}/{client_id}", response_model=ClientOut, status_code=status.HTTP_200_OK)
 def update_client(
         company_id: uuid.UUID,
         client_id: uuid.UUID,
-        client_update: CreateClient,
-        current_user=Depends(get_current_user),
-        db: Session = Depends(get_db)
+        client_update: UpdateClient,
+        db: Session = Depends(get_db),
+        _: None = Depends(validate_company_access)
 ):
-    company = db.query(Company).filter(Company.id == company_id, Company.owner_id == current_user.id).first()
-    if not company:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
 
-    client = db.query(Client).filter(Client.id == client_id).first()
+    client = get_client_or_404(db, client_id, company_id)
     if not client:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
 
-    for key, value in client_update.dict().items():
+    for key, value in client_update.dict(exclude_unset=True).items():
         setattr(client, key, value)
     db.commit()
     db.refresh(client)
     return client
 
 
-@router.delete("/{company_id}/{client_id}")
+@router.delete("/{company_id}/{client_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_client(
         company_id: uuid.UUID,
         client_id: uuid.UUID,
-        current_user=Depends(get_current_user),
-        db: Session = Depends(get_db)):
-    company = db.query(Company).filter(Company.id == company_id, Company.owner_id == current_user.id).first()
-    if not company:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
+        db: Session = Depends(get_db),
+        _: None = Depends(validate_company_access)
+):
 
-    client = db.query(Client).filter(Client.id == client_id).first()
+    client = get_client_or_404(db, client_id, company_id)
     if not client:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
     db.delete(client)
