@@ -11,11 +11,13 @@ from models.company import Company
 from models.invitation import Invitation
 from utils.security import get_current_user
 
+router = APIRouter(prefix="/messages", tags=["messages"])
 
 class CreateMessage(BaseModel):
     message: str
     messageType: str
-    social: str
+    platform: str
+    service: uuid.UUID
 
 
 class MessageOutput(BaseModel):
@@ -28,11 +30,8 @@ class MessageOutput(BaseModel):
     invitation_id: uuid.UUID | None = None
 
 
-router = APIRouter(prefix="/messages", tags=["messages"])
-
-
-@router.post("/{company_id}/{client_id}", response_model=MessageOutput)
-async def create_message(
+@router.post("/{company_id}/{client_id}/send_single_sms", response_model=MessageOutput)
+def create_message(
     company_id: str,
     client_id: str,
     request: CreateMessage,
