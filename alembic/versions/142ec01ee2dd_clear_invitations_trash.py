@@ -1,8 +1,8 @@
-"""add description to service
+"""clear invitations trash
 
-Revision ID: 68499cfeaeff
-Revises: a3cdd97dc8e8
-Create Date: 2025-10-24 19:32:51.376696
+Revision ID: 142ec01ee2dd
+Revises: dbd0476fcf90
+Create Date: 2025-11-11 12:22:26.875001
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '68499cfeaeff'
-down_revision: Union[str, Sequence[str], None] = 'a3cdd97dc8e8'
+revision: str = '142ec01ee2dd'
+down_revision: Union[str, Sequence[str], None] = 'dbd0476fcf90'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

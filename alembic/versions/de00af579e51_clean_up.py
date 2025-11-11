@@ -1,8 +1,8 @@
-"""add service model
+"""clean up
 
-Revision ID: a3cdd97dc8e8
-Revises: 30d82b7b6cad
-Create Date: 2025-10-24 19:18:37.288952
+Revision ID: de00af579e51
+Revises: 142ec01ee2dd
+Create Date: 2025-11-11 12:25:03.912586
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'a3cdd97dc8e8'
-down_revision: Union[str, Sequence[str], None] = '30d82b7b6cad'
+revision: str = 'de00af579e51'
+down_revision: Union[str, Sequence[str], None] = '142ec01ee2dd'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

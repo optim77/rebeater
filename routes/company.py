@@ -90,9 +90,9 @@ def list_companies(
 def get_company(company_id: UUID,
                 db: Session = Depends(get_db),
                 current_user=Depends(get_current_user)):
-    company = db.query(Company).filter(
-        Company.id == company_id,
-        Company.owner_id == current_user.id
+    company = db.query(Company).filter_by(
+        id=company_id,
+        owner_id=current_user.id
     ).first()
     if not company:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
@@ -105,15 +105,15 @@ def get_socials(
         current_user=Depends(get_current_user),
         db: Session = Depends(get_db)
 ):
-    company = db.query(Company).filter(Company.id == company_id, Company.owner_id == current_user.id).first()
+    company = db.query(Company).filter_by(id=company_id, owner_id=current_user.id).first()
     if not company:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
     return {
-        "google": company.google_review_link,
-        "facebook": company.facebook_url,
-        "instagram": company.instagram_link,
-        "tiktok": company.tiktok_link,
-        "linkedin": company.linkedin_link,
+        "google": company.google,
+        "facebook": company.facebook,
+        "instagram": company.instagram,
+        "tiktok": company.tiktok,
+        "linkedin": company.linkedin,
         "booksy": company.booksy,
         "znany_lekarz": company.znany_lekarz
     }
@@ -124,9 +124,9 @@ def update_company(company_id: UUID,
                    company_update: CompanyUpdate,
                    db: Session = Depends(get_db),
                    current_user=Depends(get_current_user)):
-    company = db.query(Company).filter(
-        Company.id == company_id,
-        Company.owner_id == current_user.id
+    company = db.query(Company).filter_by(
+        id=company_id,
+        owner_id=current_user.id
     ).first()
     if not company:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
@@ -145,9 +145,9 @@ def update_company(company_id: UUID,
 def delete_company(company_id: UUID,
                    db: Session = Depends(get_db),
                    current_user=Depends(get_current_user)):
-    company = db.query(Company).filter(
-        Company.id == company_id,
-        Company.owner_id == current_user.id
+    company = db.query(Company).filter_by(
+        id=company_id,
+        owner_id=current_user.id
     ).first()
     if not company:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
