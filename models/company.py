@@ -10,6 +10,9 @@ class Company(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String(255), nullable=False)
     description = Column(String(5000))
+    logo_url = Column(String(5000), nullable=True)
+
+
     google = Column(String)
     facebook = Column(String)
     instagram = Column(String)

@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import Column, String, DateTime, Enum, ForeignKey
+from sqlalchemy import Column, String, DateTime, Enum, ForeignKey, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -22,8 +22,15 @@ class Message(Base):
     portal = Column(Enum(Portal, name="portal_enum"), nullable=True)
 
     responded = Column(Enum(Respond, name="respond_enum"), nullable=True)
-    simple_feedback = Column(String, nullable=True)
+    is_redirect = Column(Boolean, nullable=True)
+    redirect_feedback = Column(String, nullable=True)
+
+    is_rating = Column(Boolean, nullable=True)
     rating = Column(String, nullable=True)
+    rating_feedback = Column(String, nullable=True)
+
+    is_survey = Column(Boolean, nullable=True)
+    # TODO: Make survey model and relation
 
     client_id = Column(UUID(as_uuid=True), ForeignKey("clients.id", ondelete="CASCADE"), nullable=False)
     company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="CASCADE"), nullable=True)

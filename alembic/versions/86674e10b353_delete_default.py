@@ -1,8 +1,8 @@
-"""clear invitations trash
+"""delete default
 
-Revision ID: 142ec01ee2dd
-Revises: dbd0476fcf90
-Create Date: 2025-11-11 12:22:26.875001
+Revision ID: 86674e10b353
+Revises: 982e49b4ff01
+Create Date: 2025-11-11 17:43:10.980002
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '142ec01ee2dd'
-down_revision: Union[str, Sequence[str], None] = 'dbd0476fcf90'
+revision: str = '86674e10b353'
+down_revision: Union[str, Sequence[str], None] = '982e49b4ff01'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

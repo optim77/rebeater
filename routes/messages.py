@@ -3,6 +3,7 @@ from datetime import datetime
 from fastapi import APIRouter, HTTPException, Depends, Query
 from fastapi_pagination import Page, Params
 from pydantic import BaseModel
+from pyexpat.errors import messages
 from sqlalchemy.orm import Session
 from starlette import status
 from fastapi_pagination.ext.sqlalchemy import paginate
@@ -27,14 +28,19 @@ class MessageOutput(BaseModel):
     message: str
     send_at: datetime
     messageType: str
-    responded: str | None = None
+    clicked_at: datetime | None = None
     feedback: str | None = None
     tracking_id: uuid.UUID | None = None
 
 class ReviewResponse(BaseModel):
-    service_name: str
-    service_id: uuid.UUID
-    portal: str
+    service_name: str | None = None
+    service_id: uuid.UUID | None = None
+    portal: str | None = None
+    is_redirect: bool | None = None
+    is_survey: bool | None = None
+    is_rating: bool | None = None
+    company_logo: str | None = None
+
 
 
 @router.post("/{company_id}/{client_id}/send_single_sms", response_model=MessageOutput)
@@ -79,7 +85,7 @@ def create_message(
         send_at=message.send_at,
         messageType=message.messageType.value if hasattr(message.messageType, "value") else message.messageType,
         responded=message.responded.value if message.responded else None,
-        feedback=message.simple_feedback,
+        feedback=message.redirect_feedback,
         tracking_id=message.tracking_id,
     )
 
@@ -105,7 +111,7 @@ def get_messages(
     return paginate(query, params)
 
 
-@router.get("/review/{company_id}/{client_id}/{tracking_id}")
+@router.get("/review/{company_id}/{client_id}/{tracking_id}", response_model=ReviewResponse, status_code=status.HTTP_200_OK)
 def get_review(
         company_id: uuid.UUID,
         client_id: uuid.UUID,
@@ -124,4 +130,30 @@ def get_review(
     if not review_link:
         raise HTTPException(status_code=404, detail="No review link found for this portal")
 
-    return ReviewResponse(service_name=service.name, service_id=service.id, portal=review_link)
+    return ReviewResponse(
+        service_name=service.name,
+        service_id=service.id,
+        portal=review_link,
+        is_redirect=message.is_redirect,
+        is_survey=message.is_survey,
+        is_rating=message.is_rating,
+        company_logo=company.logo_url
+    )
+
+
+@router.get("/review/{company_id}/{client_id}/{tracking_id}/ping")
+def ping_click(
+        company_id: uuid.UUID,
+        client_id: uuid.UUID,
+        tracking_id: uuid.UUID,
+        db: Session = Depends(get_db),
+):
+    message = db.query(Message).filter_by(client_id=client_id, company_id=company_id, tracking_id=tracking_id).first()
+    if message.clicked_at:
+        return status.HTTP_200_OK
+    if not message:
+        raise HTTPException(status_code=404, detail="Message not found")
+    message.clicked_at = datetime.now()
+    db.commit()
+    db.refresh(message)
+    return status.HTTP_200_OK
