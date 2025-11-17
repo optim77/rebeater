@@ -3,7 +3,6 @@ from datetime import datetime
 from fastapi import APIRouter, HTTPException, Depends, Query
 from fastapi_pagination import Page, Params
 from pydantic import BaseModel
-from pyexpat.errors import messages
 from sqlalchemy.orm import Session
 from starlette import status
 from fastapi_pagination.ext.sqlalchemy import paginate
@@ -13,6 +12,7 @@ from models.company import Company
 
 from models.utils.messageType import MessageType
 from models.utils.portalType import Portal
+from models.utils.respondType import Respond
 from utils.security import get_current_user
 
 router = APIRouter(prefix="/messages", tags=["messages"])
@@ -41,7 +41,9 @@ class ReviewResponse(BaseModel):
     is_rating: bool | None = None
     company_logo: str | None = None
 
-
+class URLFeedbackResponse(BaseModel):
+    status: str = "positive" or "negative"
+    feedback: str | None = None
 
 @router.post("/{company_id}/{client_id}/send_single_sms", response_model=MessageOutput)
 def create_message(
@@ -84,7 +86,7 @@ def create_message(
         message=message.message,
         send_at=message.send_at,
         messageType=message.messageType.value if hasattr(message.messageType, "value") else message.messageType,
-        responded=message.responded.value if message.responded else None,
+        responded=message.redirect_response.value if message.redirect_response else None,
         feedback=message.redirect_feedback,
         tracking_id=message.tracking_id,
     )
@@ -120,6 +122,12 @@ def get_review(
 ):
     message = db.query(Message).filter_by(client_id=client_id, company_id=company_id, tracking_id=tracking_id).first()
 
+    if message.completed:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Review already completed"
+        )
+
     if not message:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Message not found")
 
@@ -149,7 +157,7 @@ def ping_click(
         db: Session = Depends(get_db),
 ):
     message = db.query(Message).filter_by(client_id=client_id, company_id=company_id, tracking_id=tracking_id).first()
-    if message.clicked_at:
+    if message.clicked_at or message.completed:
         return status.HTTP_200_OK
     if not message:
         raise HTTPException(status_code=404, detail="Message not found")
@@ -157,3 +165,39 @@ def ping_click(
     db.commit()
     db.refresh(message)
     return status.HTTP_200_OK
+
+@router.post("/review/{company_id}/{client_id}/{tracking_id}/url_feedback_positive")
+def url_feedback_positive(
+        company_id: uuid.UUID,
+        client_id: uuid.UUID,
+        tracking_id: uuid.UUID,
+        db: Session = Depends(get_db),
+):
+    message = db.query(Message).filter_by(client_id=client_id, company_id=company_id, tracking_id=tracking_id).first()
+    message.completed_at = datetime.now()
+    message.redirect_response = Respond.positiveResponse
+    message.completed = True
+    db.commit()
+    db.refresh(message)
+    return status.HTTP_200_OK
+
+
+@router.post("/review/{company_id}/{client_id}/{tracking_id}/url_feedback_negative")
+def url_feedback_negative(
+        company_id: uuid.UUID,
+        client_id: uuid.UUID,
+        tracking_id: uuid.UUID,
+        feedback: URLFeedbackResponse,
+        db: Session = Depends(get_db),
+):
+    message = db.query(Message).filter_by(client_id=client_id, company_id=company_id, tracking_id=tracking_id).first()
+    message.completed_at = datetime.now()
+    message.redirect_response = Respond.negativeResponse
+    if feedback.feedback:
+        message.feedback = feedback.feedback
+    message.completed = True
+    db.commit()
+    db.refresh(message)
+    return status.HTTP_200_OK
+
+

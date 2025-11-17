@@ -21,8 +21,8 @@ class Message(Base):
     messageType = Column(Enum(MessageType, name="message_type_enum"), nullable=False)
     portal = Column(Enum(Portal, name="portal_enum"), nullable=True)
 
-    responded = Column(Enum(Respond, name="respond_enum"), nullable=True)
     is_redirect = Column(Boolean, nullable=True)
+    redirect_response = Column(Enum(Respond, name="respond_enum"), nullable=True)
     redirect_feedback = Column(String, nullable=True)
 
     is_rating = Column(Boolean, nullable=True)
@@ -30,6 +30,10 @@ class Message(Base):
     rating_feedback = Column(String, nullable=True)
 
     is_survey = Column(Boolean, nullable=True)
+
+    completed = Column(Boolean, nullable=True, default=False)
+    completed_at = Column(DateTime, nullable=True)
+
     # TODO: Make survey model and relation
 
     client_id = Column(UUID(as_uuid=True), ForeignKey("clients.id", ondelete="CASCADE"), nullable=False)
