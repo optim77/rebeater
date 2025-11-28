@@ -1,8 +1,10 @@
 import uuid
 from datetime import datetime
+from typing import Optional
+
 from fastapi import APIRouter, HTTPException, Depends, Query
 from fastapi_pagination import Page, Params
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from sqlalchemy.orm import Session
 from starlette import status
 from fastapi_pagination.ext.sqlalchemy import paginate
@@ -20,17 +22,30 @@ router = APIRouter(prefix="/messages", tags=["messages"])
 class CreateMessage(BaseModel):
     message: str
     phone: str
-    service: uuid.UUID
+    service: Optional[uuid.UUID] = None
     platform: str
+    type: str = "redirect" or "rating" or "survey"
 
-class MessageOutput(BaseModel):
+    @field_validator("service", mode="before")
+    def empty_string_to_none(cls, v):
+        if v == "" or v is None:
+            return None
+        return v
+
+class MessagesOutput(BaseModel):
     id: uuid.UUID
     message: str
     send_at: datetime
     messageType: str
     clicked_at: datetime | None = None
-    feedback: str | None = None
+    redirect_feedback: str | None = None
     tracking_id: uuid.UUID | None = None
+    is_redirect: bool | None = None
+    is_rating: bool | None = None
+    is_survey: bool | None = None
+    redirect_response: Respond | None = None
+    completed: bool | None = None
+    completed_at: datetime | None = None
 
 class ReviewResponse(BaseModel):
     service_name: str | None = None
@@ -45,7 +60,28 @@ class URLFeedbackResponse(BaseModel):
     status: str = "positive" or "negative"
     feedback: str | None = None
 
-@router.post("/{company_id}/{client_id}/send_single_sms", response_model=MessageOutput)
+
+class MessageOutput(BaseModel):
+    id: uuid.UUID
+    message: str
+    tracking_id: uuid.UUID | None = None
+    clicked_at: datetime | None = None
+    messageType: str
+    send_at: datetime
+    portal: Portal | None = None
+    is_redirect: bool | None = None
+    redirect_response: Respond | None = None
+    redirect_feedback: str | None = None
+    is_rating: bool | None = None
+    rating: int | None = None
+    rating_feedback: str | None = None
+    is_survey: bool | None = None
+    completed: bool | None = None
+    completed_at: datetime | None = None
+    service_id: uuid.UUID | None = None
+    service_name: str | None = None
+
+@router.post("/{company_id}/{client_id}/send_single_sms", response_model=MessagesOutput)
 def create_message(
     company_id: str,
     client_id: str,
@@ -62,7 +98,6 @@ def create_message(
     if not company:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
 
-
     message = Message(
         message=request.message,
         tracking_id=uuid.uuid4(),
@@ -71,9 +106,16 @@ def create_message(
         portal=Portal[request.platform],
         client_id=client_id,
         company_id=company.id,
-        service_id=request.service,
     )
-
+    print(request.service)
+    if request.service:
+        message.service = request.service
+    if request.type == "redirect":
+        message.is_redirect = True
+    elif request.type == "rating":
+        message.is_rating = True
+    elif request.type == "survey":
+        message.is_survey = True
     db.add_all([message])
     db.commit()
 
@@ -81,7 +123,7 @@ def create_message(
 
     # TODO: Implement sending SMS
 
-    return MessageOutput(
+    return MessagesOutput(
         id=message.id,
         message=message.message,
         send_at=message.send_at,
@@ -92,7 +134,7 @@ def create_message(
     )
 
 
-@router.get("/{company_id}/{client_id}", response_model=Page[MessageOutput], status_code=status.HTTP_200_OK)
+@router.get("/{company_id}/{client_id}", response_model=Page[MessagesOutput], status_code=status.HTTP_200_OK)
 def get_messages(
     company_id: uuid.UUID,
     client_id: uuid.UUID,
@@ -105,7 +147,7 @@ def get_messages(
     if not company:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
 
-    query = db.query(Message).filter_by(client_id=client_id, company_id=company_id)
+    query = db.query(Message).filter_by(client_id=client_id, company_id=company_id).order_by(Message.send_at.desc())
 
     if search_term:
         query = query.filter(Message.message.ilike(f"%{search_term}%"))
@@ -139,8 +181,8 @@ def get_review(
         raise HTTPException(status_code=404, detail="No review link found for this portal")
 
     return ReviewResponse(
-        service_name=service.name,
-        service_id=service.id,
+        service_name=service.name if service else None,
+        service_id=service.id if service else None  ,
         portal=review_link,
         is_redirect=message.is_redirect,
         is_survey=message.is_survey,
@@ -194,10 +236,53 @@ def url_feedback_negative(
     message.completed_at = datetime.now()
     message.redirect_response = Respond.negativeResponse
     if feedback.feedback:
-        message.feedback = feedback.feedback
+        message.redirect_feedback = feedback.feedback
     message.completed = True
     db.commit()
     db.refresh(message)
     return status.HTTP_200_OK
+
+
+@router.get("/review/{company_id}/{client_id}/sms_message_details/{message_id}", response_model=MessageOutput)
+def sms_message_details(
+        company_id: uuid.UUID,
+        client_id: uuid.UUID,
+        message_id: uuid.UUID,
+        db: Session = Depends(get_db),
+):
+    message = db.query(Message).filter_by(
+        client_id=client_id,
+        company_id=company_id,
+        id=message_id
+    ).first()
+
+    if not message:
+        raise HTTPException(status_code=404, detail="Message not found")
+
+    service = None
+    if message.service_id:
+        service = db.query(Service).filter_by(id=message.service_id).first()
+
+    return MessageOutput(
+        id=message.id,
+        message=message.message,
+        tracking_id=message.tracking_id,
+        clicked_at=message.clicked_at,
+        messageType=message.messageType,
+        send_at=message.send_at,
+        portal=message.portal,
+        is_redirect=message.is_redirect,
+        redirect_response=message.redirect_response,
+        redirect_feedback=message.redirect_feedback,
+        is_rating=message.is_rating,
+        rating=message.rating,
+        rating_feedback=message.rating_feedback,
+        is_survey=message.is_survey,
+        completed=message.completed,
+        completed_at=message.completed_at,
+        service_id=message.service_id,
+        service_name=service.name if service else None,
+    )
+
 
 
