@@ -1,3 +1,4 @@
+from typing import Type
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -12,20 +13,22 @@ from utils.security import get_current_user
 
 
 def get_company(
-        company_id: UUID,
-        db: Session = Depends(get_db),
-        current_user = Depends(get_current_user)
-) -> Company | None:
-    company = db.query(Company).filter(
-        Company.id == company_id,
-        Company.owner_id == current_user.id
-    ).first()
+    company_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+) -> Type[Company]:
+    company = (
+        db.query(Company)
+        .filter_by(id=company_id, owner_id=current_user.id)
+        .first()
+    )
 
     if not company:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Company not found"
         )
+
     return company
 
 

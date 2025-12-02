@@ -7,7 +7,7 @@ from database import Base, engine
 
 from models import client, company, message, services, template, user
 
-from routes import auth, clients, tracking, company, service, messages
+from routes import auth, clients, tracking, company, service, messages, surveys
 
 Base.metadata.create_all(bind=engine)
 
@@ -31,3 +31,4 @@ app.include_router(tracking.router)
 app.include_router(company.router)
 app.include_router(service.router)
 app.include_router(messages.router)
+app.include_router(surveys.router)
