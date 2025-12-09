@@ -4,3 +4,4 @@ from .message import Message
 from .services import Service
 from .template import Template
 from .user import User
+from .survey import Survey

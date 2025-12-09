@@ -24,7 +24,11 @@ class CreateMessage(BaseModel):
     phone: str
     service: Optional[uuid.UUID] = None
     platform: str
-    type: str = "redirect" or "rating" or "survey"
+    type: str = "feedback" or "rating" or "survey"
+    isRedirect: bool = False
+    ratingQuestion: str | None = None
+    feedbackQuestion: str | None = None
+    surveyId: uuid.UUID | None = None
 
     @field_validator("service", mode="before")
     def empty_string_to_none(cls, v):
@@ -38,12 +42,12 @@ class MessagesOutput(BaseModel):
     send_at: datetime
     messageType: str
     clicked_at: datetime | None = None
-    redirect_feedback: str | None = None
+    feedback_content: str | None = None
     tracking_id: uuid.UUID | None = None
-    is_redirect: bool | None = None
+    is_feedback: bool | None = None
     is_rating: bool | None = None
     is_survey: bool | None = None
-    redirect_response: Respond | None = None
+    feedback_response: Respond | None = None
     completed: bool | None = None
     completed_at: datetime | None = None
 
@@ -51,7 +55,7 @@ class ReviewResponse(BaseModel):
     service_name: str | None = None
     service_id: uuid.UUID | None = None
     portal: str | None = None
-    is_redirect: bool | None = None
+    is_feedback: bool | None = None
     is_survey: bool | None = None
     is_rating: bool | None = None
     company_logo: str | None = None
@@ -69,9 +73,9 @@ class MessageOutput(BaseModel):
     messageType: str
     send_at: datetime
     portal: Portal | None = None
-    is_redirect: bool | None = None
-    redirect_response: Respond | None = None
-    redirect_feedback: str | None = None
+    is_feedback: bool | None = None
+    feedback_response: Respond | None = None
+    feedback_content: str | None = None
     is_rating: bool | None = None
     rating: int | None = None
     rating_feedback: str | None = None
@@ -84,7 +88,7 @@ class MessageOutput(BaseModel):
 @router.post("/{company_id}/{client_id}/send_single_sms", response_model=MessagesOutput)
 def create_message(
     company_id: str,
-    client_id: str,
+    client_id: uuid.UUID,
     request: CreateMessage,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
@@ -103,19 +107,24 @@ def create_message(
         tracking_id=uuid.uuid4(),
         send_at=datetime.now(),
         messageType=MessageType.SMS,
-        portal=Portal[request.platform],
         client_id=client_id,
-        company_id=company.id,
+        company_id=company.id
     )
-    print(request.service)
+    if request.platform:
+        message.platform = Portal[request.platform]
     if request.service:
         message.service = request.service
-    if request.type == "redirect":
-        message.is_redirect = True
+    if request.type == "feedback":
+        message.is_feedback = True
+        message.feedback_question = request.feedbackQuestion
     elif request.type == "rating":
         message.is_rating = True
+        message.rating_question = request.ratingQuestion
     elif request.type == "survey":
         message.is_survey = True
+        message.survey_id = request.surveyId
+
+
     db.add_all([message])
     db.commit()
 
@@ -128,8 +137,8 @@ def create_message(
         message=message.message,
         send_at=message.send_at,
         messageType=message.messageType.value if hasattr(message.messageType, "value") else message.messageType,
-        responded=message.redirect_response.value if message.redirect_response else None,
-        feedback=message.redirect_feedback,
+        responded=message.feedback_response.value if message.feedback_response else None,
+        feedback=message.feedback_content,
         tracking_id=message.tracking_id,
     )
 
@@ -184,7 +193,7 @@ def get_review(
         service_name=service.name if service else None,
         service_id=service.id if service else None  ,
         portal=review_link,
-        is_redirect=message.is_redirect,
+        is_feedback=message.is_feedback,
         is_survey=message.is_survey,
         is_rating=message.is_rating,
         company_logo=company.logo_url
@@ -217,7 +226,7 @@ def url_feedback_positive(
 ):
     message = db.query(Message).filter_by(client_id=client_id, company_id=company_id, tracking_id=tracking_id).first()
     message.completed_at = datetime.now()
-    message.redirect_response = Respond.positiveResponse
+    message.feedback_response = Respond.positiveResponse
     message.completed = True
     db.commit()
     db.refresh(message)
@@ -234,9 +243,9 @@ def url_feedback_negative(
 ):
     message = db.query(Message).filter_by(client_id=client_id, company_id=company_id, tracking_id=tracking_id).first()
     message.completed_at = datetime.now()
-    message.redirect_response = Respond.negativeResponse
+    message.feedback_response = Respond.negativeResponse
     if feedback.feedback:
-        message.redirect_feedback = feedback.feedback
+        message.feedback_content = feedback.feedback
     message.completed = True
     db.commit()
     db.refresh(message)
@@ -271,9 +280,9 @@ def sms_message_details(
         messageType=message.messageType,
         send_at=message.send_at,
         portal=message.portal,
-        is_redirect=message.is_redirect,
-        redirect_response=message.redirect_response,
-        redirect_feedback=message.redirect_feedback,
+        is_feedback=message.is_feedback,
+        feedback_response=message.feedback_response,
+        feedback_content=message.feedback_content,
         is_rating=message.is_rating,
         rating=message.rating,
         rating_feedback=message.rating_feedback,

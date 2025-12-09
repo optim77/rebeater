@@ -35,7 +35,9 @@ class SurveyOutput(BaseModel):
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
-@router.post("/{company_id}/create", response_model=SurveyOutput)
+class CreateSurveyOutput(BaseModel):
+    id: uuid.UUID
+@router.post("/{company_id}/create", response_model=CreateSurveyOutput)
 def create_survey(
         company_id: uuid.UUID,
         request: SurveyCreate,
@@ -54,14 +56,15 @@ def create_survey(
     survey = Survey(
         name=request.name,
         description=request.description,
-        content=request.content
+        content=request.content,
+        company_id=company.id
     )
 
     db.add(survey)
     db.commit()
     db.refresh(survey)
 
-    return survey
+    return { "id": survey.id }
 
 @router.get("/{company_id}/list", response_model=Page[SurveyOutput])
 def get_surveys(
@@ -109,7 +112,7 @@ def get_single_survey(
 
     return survey
 
-@router.patch("/{company_id}/{survey_id}", response_model=SurveyOutput)
+@router.put("/{company_id}/{survey_id}", response_model=CreateSurveyOutput)
 def update_survey(
         company_id: uuid.UUID,
         survey_id: uuid.UUID,
@@ -142,7 +145,7 @@ def update_survey(
     db.commit()
     db.refresh(survey)
 
-    return survey
+    return { "id": survey.id }
 
 
 @router.delete("/{company_id}/{survey_id}", status_code=status.HTTP_204_NO_CONTENT)

@@ -1,7 +1,6 @@
 import uuid
 
-from sqlalchemy import Column, String, DateTime, Enum, ForeignKey, Boolean
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, String, DateTime, Enum, ForeignKey, Boolean, UUID
 from sqlalchemy.orm import relationship
 
 from database import Base
@@ -19,28 +18,35 @@ class Message(Base):
     send_at = Column(DateTime, nullable=False)
     clicked_at = Column(DateTime, nullable=True)
     messageType = Column(Enum(MessageType, name="message_type_enum"), nullable=False)
-    portal = Column(Enum(Portal, name="portal_enum"), nullable=True)
 
-    is_redirect = Column(Boolean, nullable=True)
-    redirect_response = Column(Enum(Respond, name="respond_enum"), nullable=True)
-    redirect_feedback = Column(String, nullable=True)
+
+    is_feedback = Column(Boolean, nullable=True)
+    feedback_question = Column(String, nullable=True)
+    feedback_response = Column(Enum(Respond, name="respond_enum"), nullable=True)
+    feedback_content = Column(String, nullable=True)
 
     is_rating = Column(Boolean, nullable=True)
+    rating_question = Column(String, nullable=True)
     rating = Column(String, nullable=True)
     rating_feedback = Column(String, nullable=True)
 
     is_survey = Column(Boolean, nullable=True)
 
+    is_redirect = Column(Boolean, nullable=True)
+    portal = Column(Enum(Portal, name="portal_enum"), nullable=True)
+
+
     completed = Column(Boolean, nullable=True, default=False)
     completed_at = Column(DateTime, nullable=True)
 
-    # TODO: Make survey model and relation
 
     client_id = Column(UUID(as_uuid=True), ForeignKey("clients.id", ondelete="CASCADE"), nullable=False)
     company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="CASCADE"), nullable=True)
     service_id = Column(UUID(as_uuid=True), ForeignKey("services.id", ondelete="CASCADE"), nullable=True)
+    survey_id = Column(UUID(as_uuid=True), ForeignKey("surveys.id", ondelete="CASCADE"), nullable=True)
 
     client = relationship("Client", back_populates="messages")
     company = relationship("Company", back_populates="messages")
     service = relationship("Service", back_populates="messages")
+    survey = relationship("Survey", back_populates="messages")
 

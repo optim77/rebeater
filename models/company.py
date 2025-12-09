@@ -27,3 +27,4 @@ class Company(Base):
     services = relationship("Service", back_populates="company", cascade="all, delete-orphan")
     messages = relationship("Message", back_populates="company", cascade="all, delete-orphan")
     templates = relationship("Template", back_populates="company", cascade="all, delete-orphan")
+    surveys = relationship("Survey", back_populates="company", cascade="all, delete-orphan")
