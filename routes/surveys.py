@@ -1,42 +1,20 @@
 import uuid
-from datetime import datetime
-from typing import Optional, Any
 
 from fastapi import APIRouter, HTTPException, Depends, Query
 from fastapi_pagination import Page, Params
 from fastapi_pagination.ext.sqlalchemy import paginate
-from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from starlette import status
 
 from database import get_db
 from models.survey import Survey
+from utils.get_company import validate_company_access
 from utils.security import get_current_user
 from models.company import Company
+from schemas.surveys import CreateSurveyOutput, SurveyCreate, SurveyOutput, SurveyUpdate
 
 router = APIRouter(prefix="/surveys", tags=["surveys"])
 
-
-class SurveyCreate(BaseModel):
-    name: str
-    description: Optional[str] = None
-    content: Any
-
-class SurveyUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    content: Optional[Any] = None
-
-class SurveyOutput(BaseModel):
-    id: uuid.UUID
-    name: str
-    description: Optional[str] = None
-    content: Any
-    created_at: datetime | None = None
-    updated_at: datetime | None = None
-
-class CreateSurveyOutput(BaseModel):
-    id: uuid.UUID
 @router.post("/{company_id}/create", response_model=CreateSurveyOutput)
 def create_survey(
         company_id: uuid.UUID,
@@ -72,16 +50,8 @@ def get_surveys(
         search: str | None = Query(None),
         params: Params = Depends(),
         db: Session = Depends(get_db),
-        current_user=Depends(get_current_user)
+        _: None = Depends(validate_company_access)
 ):
-    company = (
-        db.query(Company)
-        .filter_by(id=company_id, owner_id=current_user.id)
-        .first()
-    )
-    if not company:
-        raise HTTPException(status_code=404, detail="Company not found")
-
     query = db.query(Survey).order_by(Survey.created_at.desc())
 
     if search:
@@ -95,16 +65,8 @@ def get_single_survey(
         company_id: uuid.UUID,
         survey_id: uuid.UUID,
         db: Session = Depends(get_db),
-        current_user=Depends(get_current_user)
+        _: None = Depends(validate_company_access)
 ):
-    company = (
-        db.query(Company)
-        .filter_by(id=company_id, owner_id=current_user.id)
-        .first()
-    )
-    if not company:
-        raise HTTPException(status_code=404, detail="Company not found")
-
     survey = db.query(Survey).filter_by(id=survey_id).first()
 
     if not survey:
@@ -118,16 +80,8 @@ def update_survey(
         survey_id: uuid.UUID,
         request: SurveyUpdate,
         db: Session = Depends(get_db),
-        current_user=Depends(get_current_user)
+        _: None = Depends(validate_company_access)
 ):
-    company = (
-        db.query(Company)
-        .filter_by(id=company_id, owner_id=current_user.id)
-        .first()
-    )
-    if not company:
-        raise HTTPException(status_code=404, detail="Company not found")
-
     survey = db.query(Survey).filter_by(id=survey_id).first()
 
     if not survey:
@@ -153,16 +107,8 @@ def delete_survey(
         company_id: uuid.UUID,
         survey_id: uuid.UUID,
         db: Session = Depends(get_db),
-        current_user=Depends(get_current_user),
+        _: None = Depends(validate_company_access)
 ):
-    company = (
-        db.query(Company)
-        .filter_by(id=company_id, owner_id=current_user.id)
-        .first()
-    )
-    if not company:
-        raise HTTPException(status_code=404, detail="Company not found")
-
     survey = db.query(Survey).filter_by(id=survey_id).first()
 
     if not survey:

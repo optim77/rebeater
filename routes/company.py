@@ -9,55 +9,28 @@ from typing import Optional
 from models.company import Company
 from database import get_db
 from utils.security import get_current_user
-from pydantic import BaseModel
 from uuid import UUID
+from schemas.company import CompanyOut, CompanyCreate, CompanyUpdate
 
 router = APIRouter(prefix="/companies", tags=["Companies"])
 
+@router.post("/", response_model=CompanyOut, status_code=status.HTTP_201_CREATED)
+def create_company(
+        company: CompanyCreate,
+        db: Session = Depends(get_db),
+        current_user=Depends(get_current_user)):
 
-class CompanyCreate(BaseModel):
-    name: str
-    description: Optional[str] = None
-    google_review_link: Optional[str] = None
-    facebook_url: Optional[str] = None
-    instagram_link: Optional[str] = None
-    linkedin_link: Optional[str] = None
-    tiktok_link: Optional[str] = None
-    znany_lekarz: Optional[str] = None
-    booksy_link: Optional[str] = None
-
-
-class CompanyUpdate(BaseModel):
-    name: str = None
-    description: str = None
-
-
-class CompanyOut(BaseModel):
-    id: UUID
-    name: str
-    description: Optional[str] = None
-    owner_id: UUID
-    google_review_link: Optional[str] = None
-    facebook_url: Optional[str] = None
-    instagram_link: Optional[str] = None
-    linkedin_link: Optional[str] = None
-    tiktok_link: Optional[str] = None
-    znany_lekarz: Optional[str] = None
-    booksy_link: Optional[str] = None
-
-    class Config:
-        from_attributes = True
-
-
-@router.post("/", response_model=CompanyOut)
-def create_company(company: CompanyCreate,
-                   db: Session = Depends(get_db),
-                   current_user=Depends(get_current_user)):
-    # TODO: validation
     db_company = Company(
         name=company.name,
         description=company.description,
-        owner_id=current_user.id
+        owner_id=current_user.id,
+        google=company.google_review_link,
+        facebook=company.facebook_url,
+        instagram=company.instagram_link,
+        linkedin=company.linkedin_link,
+        tiktok=company.tiktok_link,
+        znany_lekarz=company.znany_lekarz,
+        booksy=company.booksy_link,
     )
     db.add(db_company)
     db.commit()
@@ -65,7 +38,7 @@ def create_company(company: CompanyCreate,
     return db_company
 
 
-@router.get("/", response_model=Page[CompanyOut])
+@router.get("/", response_model=Page[CompanyOut], status_code=status.HTTP_200_OK)
 def list_companies(
         search_term: Optional[str] = Query(None),
         params: Params = Depends(),
@@ -86,14 +59,12 @@ def list_companies(
     return paginate(query, params)
 
 
-@router.get("/{company_id}", response_model=CompanyOut)
-def get_company(company_id: UUID,
-                db: Session = Depends(get_db),
-                current_user=Depends(get_current_user)):
-    company = db.query(Company).filter_by(
-        id=company_id,
-        owner_id=current_user.id
-    ).first()
+@router.get("/{company_id}", response_model=CompanyOut, status_code=status.HTTP_200_OK)
+def get_company(
+        company_id: UUID,
+        db: Session = Depends(get_db),
+        current_user=Depends(get_current_user)):
+    company = db.query(Company).filter_by(id=company_id,owner_id=current_user.id).first()
     if not company:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
     return company
@@ -120,14 +91,13 @@ def get_socials(
 
 
 @router.put("/{company_id}", response_model=CompanyOut)
-def update_company(company_id: UUID,
-                   company_update: CompanyUpdate,
-                   db: Session = Depends(get_db),
-                   current_user=Depends(get_current_user)):
-    company = db.query(Company).filter_by(
-        id=company_id,
-        owner_id=current_user.id
-    ).first()
+def update_company(
+        company_id: UUID,
+        company_update: CompanyUpdate,
+        db: Session = Depends(get_db),
+        current_user=Depends(get_current_user)):
+
+    company = db.query(Company).filter_by(id=company_id, owner_id=current_user.id).first()
     if not company:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
 
@@ -135,6 +105,18 @@ def update_company(company_id: UUID,
         company.name = company_update.name
     if company_update.description is not None:
         company.description = company_update.description
+    if company_update.facebook_url is not None:
+        company.facebook_url = company_update.facebook_url
+    if company_update.instagram_link is not None:
+        company.instagram_link = company_update.instagram_link
+    if company_update.linkedin_link is not None:
+        company.linkedin_link = company_update.linkedin_link
+    if company_update.tiktok_link is not None:
+        company.tiktok_link = company_update.tiktok_link
+    if company_update.znany_lekarz is not None:
+        company.znany_lekarz = company_update.znany_lekarz
+    if company_update.booksy_link is not None:
+        company.booksy_link = company_update.booksy_link
 
     db.commit()
     db.refresh(company)
@@ -142,16 +124,13 @@ def update_company(company_id: UUID,
 
 
 @router.delete("/{company_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_company(company_id: UUID,
-                   db: Session = Depends(get_db),
-                   current_user=Depends(get_current_user)):
-    company = db.query(Company).filter_by(
-        id=company_id,
-        owner_id=current_user.id
-    ).first()
+def delete_company(
+        company_id: UUID,
+        db: Session = Depends(get_db),
+        current_user=Depends(get_current_user)):
+    company = db.query(Company).filter_by(id=company_id, owner_id=current_user.id).first()
     if not company:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
-
     db.delete(company)
     db.commit()
     return

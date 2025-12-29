@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import Column, String, DateTime, Enum, ForeignKey, Boolean, UUID
+from sqlalchemy import Column, String, DateTime, Enum, ForeignKey, Boolean, UUID, JSON
 from sqlalchemy.orm import relationship
 
 from database import Base
@@ -31,6 +31,7 @@ class Message(Base):
     rating_feedback = Column(String, nullable=True)
 
     is_survey = Column(Boolean, nullable=True)
+    survey_result = Column(JSON, nullable=True)
 
     is_redirect = Column(Boolean, nullable=True)
     portal = Column(Enum(Portal, name="portal_enum"), nullable=True)

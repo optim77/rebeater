@@ -1,11 +1,9 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
 from fastapi_pagination import Page, Params
 from fastapi_pagination.ext.sqlalchemy import paginate
-from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 import uuid
-
 from sqlalchemy import or_
 from starlette import status
 
@@ -13,35 +11,14 @@ from database import get_db
 from models.client import Client
 from utils.db_transaction import db_transaction
 from utils.get_client_or_404 import get_client_or_404
-
 from utils.get_company import validate_company_access
+from schemas.clients import CreateClient, ClientOut, UpdateClient
 
 router = APIRouter(prefix="/clients", tags=["clients"])
-
-class CreateClient(BaseModel):
-    name: str
-    email: str
-    phone: str
-
-class UpdateClient(BaseModel):
-    name: str | None = None
-    email: str | None = None
-    phone: str | None = None
-
-class ClientOut(BaseModel):
-    id: uuid.UUID
-    name: str
-    email: str
-    phone: str
-
-    class Config:
-        from_attributes = True
-
 
 @router.post("/{company_id}", status_code=status.HTTP_201_CREATED)
 def add_client(company_id: uuid.UUID, client: CreateClient, db: Session = Depends(get_db)):
     client = Client(id=uuid.uuid4(), name=client.name, email=client.email, phone=client.phone, company_id=company_id)
-    # TODO: Validate fields
     with db_transaction(db):
         db.add(client)
     return client
