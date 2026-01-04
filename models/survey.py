@@ -1,4 +1,4 @@
-from sqlalchemy import Column, UUID, String, JSON, DateTime, func, ForeignKey
+from sqlalchemy import Column, UUID, String, JSON, DateTime, func, ForeignKey, Integer
 from sqlalchemy.orm import relationship
 
 from database import Base
@@ -11,9 +11,11 @@ class Survey(Base):
     name = Column(String, nullable=False)
     description = Column(String, nullable=True)
     content = Column(JSON, nullable=False)
+    completed_times = Column(Integer, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
 
     messages = relationship("Message", back_populates="survey", cascade="all, delete-orphan")
     company = relationship("Company", back_populates="surveys")
+    survey_analytic = relationship("SurveyAnalytic", back_populates="survey", uselist=False, cascade="all, delete-orphan")

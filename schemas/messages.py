@@ -6,7 +6,7 @@ import uuid
 
 from models.utils.portalType import Portal
 from models.utils.respondType import Respond
-from schemas.common.types import ClientPhone
+from schemas.common.types import ClientPhone, ClientEmail
 
 FEEDBACK_TYPE = "feedback"
 RATING_TYPE = "rating"
@@ -16,6 +16,7 @@ SURVEY_TYPE = "survey"
 class CreateMessage(BaseModel):
     message: str
     phone: ClientPhone
+    email: ClientEmail | None = None
     service: uuid.UUID | None = None
     platform: Portal | None = None
     type: str = FEEDBACK_TYPE or RATING_TYPE or SURVEY_TYPE

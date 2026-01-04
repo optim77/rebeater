@@ -3,6 +3,8 @@ from datetime import datetime
 
 from pydantic import BaseModel
 from typing import Any
+
+
 class SurveyCreate(BaseModel):
     name: str
     description: str | None = None
@@ -23,3 +25,13 @@ class SurveyOutput(BaseModel):
 
 class CreateSurveyOutput(BaseModel):
     id: uuid.UUID
+
+class SurveyAnalyticsData(BaseModel):
+    survey_id: uuid.UUID
+    name: str | None = None
+    description: str | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+    content: dict | None = None
+    completed_times: int | None = None
+    users: dict | None = None

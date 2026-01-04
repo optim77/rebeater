@@ -4,7 +4,7 @@ import uuid
 
 
 def base_template_builder(company_id: str | uuid.UUID, client_id: str | uuid.UUID, tracking_id: str | uuid.UUID) -> str:
-    host = os.getenv("HOST")
+    host = os.getenv("HOSTNAME")
 
     review_url = (
         f"{host}/invitations/review/"

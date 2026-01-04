@@ -249,13 +249,24 @@ def send_survey(
         db: Session = Depends(get_db),
 ):
     message = db.query(Message).filter_by(client_id=client_id, company_id=company_id, tracking_id=tracking_id, survey_id=survey.survey.survey_id).first()
+    db_survey = db.query(Survey).filter_by(id=survey.survey.survey_id).first()
+
     if not message:
         raise HTTPException(status_code=404, detail="Message not found")
+    if not db_survey:
+        raise HTTPException(status_code=404, detail="Survey not found")
+
+    if db_survey.completed_times is None:
+        db_survey.completed_times = 1
+    else:
+        db_survey.completed_times = db_survey.completed_times + 1
+
     message.completed_at = datetime.now()
     message.survey_result = survey.survey.answers
     message.completed = True
     db.commit()
     db.refresh(message)
+    db.refresh(db_survey)
     return status.HTTP_200_OK
 
 @router.get("/review/{company_id}/{client_id}/sms_message_details/{message_id}", response_model=MessageOutput, status_code=status.HTTP_200_OK)

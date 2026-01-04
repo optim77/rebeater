@@ -5,3 +5,4 @@ from .services import Service
 from .template import Template
 from .user import User
 from .survey import Survey
+from .survey_analytic import SurveyAnalytic
