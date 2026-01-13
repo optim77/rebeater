@@ -18,7 +18,7 @@ router = APIRouter(prefix="/clients", tags=["clients"])
 
 @router.post("/{company_id}", status_code=status.HTTP_201_CREATED)
 def add_client(company_id: uuid.UUID, client: CreateClient, db: Session = Depends(get_db)):
-    client = Client(id=uuid.uuid4(), name=client.name, email=client.email, phone=client.phone, company_id=company_id)
+    client = Client(id=uuid.uuid4(), name=client.name, surname=client.surname, email=client.email, phone=client.phone, company_id=company_id)
     with db_transaction(db):
         db.add(client)
     return client
@@ -32,12 +32,13 @@ def list_clients(
         db: Session = Depends(get_db),
         _: None = Depends(validate_company_access)
 ):
-    query = db.query(Client).filter_by(company_id=company_id)
+    query = db.query(Client).filter_by(company_id=company_id).order_by(Client.name)
 
     if search_term:
         query = query.filter(
             or_(
                 Client.name.ilike(f"%{search_term}%"),
+                Client.surname.ilike(f"%{search_term}%"),
                 Client.email.ilike(f"%{search_term}%"),
                 Client.phone.ilike(f"%{search_term}%"),
             )

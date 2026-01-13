@@ -9,7 +9,7 @@ from fastapi_pagination.ext.sqlalchemy import paginate
 from typing_extensions import Annotated
 
 from database import get_db
-from models import Message, Service, Survey
+from models import Message, Service, Survey, Template, Client
 from models.company import Company
 
 from models.utils.messageType import MessageType
@@ -86,7 +86,8 @@ def create_email_message(
         send_at=datetime.now(),
         messageType=MessageType.Email,
         client_id=client_id,
-        company_id=company_id
+        company_id=company_id,
+        template_id=request.template
     )
 
     if request.isRedirect:
@@ -110,8 +111,15 @@ def create_email_message(
     db.commit()
     db.refresh(message)
 
+    template = db.query(Template).filter_by(id=request.template).first()
+    user = db.query(Client).filter_by(id=client_id).first()
+    company = db.query(Company).filter_by(id=company_id).first()
 
-    template = base_template_builder(company_id, client_id, message.tracking_id)
+    if not template or not user or not company:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Data not found")
+
+    template = str(template.template).replace('{{name}}', user.name.split(" ")[0]).replace("{{company}}", company.name)
+
     send_email("Acme <onboarding@resend.dev>", request.email, 'test', template)
 
     return MessagesOutput(

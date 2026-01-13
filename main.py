@@ -1,13 +1,14 @@
 from fastapi import FastAPI
 from fastapi_pagination import add_pagination
 from pyexpat.errors import messages
+from resend import templates
 from starlette.middleware.cors import CORSMiddleware
 
 from database import Base, engine
 
 from models import client, company, message, services, template, user
 
-from routes import auth, clients, company, service, messages, surveys
+from routes import auth, clients, company, service, messages, surveys, template
 
 Base.metadata.create_all(bind=engine)
 
@@ -31,3 +32,4 @@ app.include_router(company.router)
 app.include_router(service.router)
 app.include_router(messages.router)
 app.include_router(surveys.router)
+app.include_router(template.router)

@@ -24,6 +24,7 @@ class CreateMessage(BaseModel):
     ratingQuestion: str | None = None
     feedbackQuestion: str | None = None
     surveyId: uuid.UUID | None = None
+    template: uuid.UUID | None = None
 
     @field_validator("service", mode="before")
     def empty_string_to_none(cls, v):

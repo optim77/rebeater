@@ -45,9 +45,11 @@ class Message(Base):
     company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="CASCADE"), nullable=True)
     service_id = Column(UUID(as_uuid=True), ForeignKey("services.id", ondelete="CASCADE"), nullable=True)
     survey_id = Column(UUID(as_uuid=True), ForeignKey("surveys.id", ondelete="CASCADE"), nullable=True)
+    template_id = Column(UUID(as_uuid=True), ForeignKey("templates.id", ondelete="CASCADE"), nullable=True)
 
     client = relationship("Client", back_populates="messages")
     company = relationship("Company", back_populates="messages")
     service = relationship("Service", back_populates="messages")
     survey = relationship("Survey", back_populates="messages")
+    template = relationship("Template", back_populates="messages")
 

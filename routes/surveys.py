@@ -5,7 +5,6 @@ from fastapi_pagination import Page, Params
 from fastapi_pagination.ext.sqlalchemy import paginate
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
-from sqlalchemy.testing.suite.test_reflection import users
 from starlette import status
 
 from database import get_db
@@ -152,7 +151,7 @@ def get_analytics(
         messages = db.query(Message).filter_by(is_survey=True, survey_id=survey.id).all()
         for message in messages:
             client = db.query(Client).filter_by(id=message.client_id).first()
-            all_users.update({client.id: client.email})
+            all_users.update({client.id: client.name if client.name else client.email})
         return SurveyAnalyticsData(
             id=survey_analytics.id,
             survey_id=survey.id,
@@ -205,8 +204,8 @@ def do_analytics(
                 if s.get('type') == 'choice':
                     record.average_choice[message.survey_result[s['id']]] += 1
                 client = db.query(Client).filter_by(id=message.client_id).first()
-                all_users.update({client.id: client.email})
-                answer = SurveyAnswer(client_id=client.id, client_email=client.email, answer=message.survey_result[s['id']])
+                all_users.update({client.id: client.name if client.name else client.email})
+                answer = SurveyAnswer(client_id=client.id, client_email=client.name if client.name else client.email, answer=message.survey_result[s['id']])
 
                 record.answers.append(answer)
         if ratings > 0 and counter_rating > 0:
