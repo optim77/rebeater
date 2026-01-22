@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from schemas.common.types import ClientPortalURL, CompanyName
 from uuid import UUID
 
-class CompanyCreate(BaseModel):
+class GroupCreate(BaseModel):
     name: CompanyName
     description: ClientPortalURL
     google_review_link: ClientPortalURL
@@ -14,12 +14,12 @@ class CompanyCreate(BaseModel):
     booksy_link: ClientPortalURL
 
 
-class CompanyUpdate(BaseModel):
+class GroupUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
 
 
-class CompanyOut(BaseModel):
+class GroupOut(BaseModel):
     id: UUID
     name: str
     description: str | None = None

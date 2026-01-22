@@ -10,36 +10,36 @@ from models.company import Company
 from database import get_db
 from utils.security import get_current_user
 from uuid import UUID
-from schemas.company import CompanyOut, CompanyCreate, CompanyUpdate
+from schemas.company import GroupOut, GroupCreate, GroupUpdate
 
-router = APIRouter(prefix="/companies", tags=["Companies"])
+router = APIRouter(prefix="/groups", tags=["Groups"])
 
-@router.post("/", response_model=CompanyOut, status_code=status.HTTP_201_CREATED)
-def create_company(
-        company: CompanyCreate,
+@router.post("/", response_model=GroupOut, status_code=status.HTTP_201_CREATED)
+def create_group(
+        group: GroupCreate,
         db: Session = Depends(get_db),
         current_user=Depends(get_current_user)):
 
-    db_company = Company(
-        name=company.name,
-        description=company.description,
+    db_group = Company(
+        name=group.name,
+        description=group.description,
         owner_id=current_user.id,
-        google=company.google_review_link,
-        facebook=company.facebook_url,
-        instagram=company.instagram_link,
-        linkedin=company.linkedin_link,
-        tiktok=company.tiktok_link,
-        znany_lekarz=company.znany_lekarz,
-        booksy=company.booksy_link,
+        google=group.google_review_link,
+        facebook=group.facebook_url,
+        instagram=group.instagram_link,
+        linkedin=group.linkedin_link,
+        tiktok=group.tiktok_link,
+        znany_lekarz=group.znany_lekarz,
+        booksy=group.booksy_link,
     )
-    db.add(db_company)
+    db.add(db_group)
     db.commit()
-    db.refresh(db_company)
-    return db_company
+    db.refresh(db_group)
+    return db_group
 
 
-@router.get("/", response_model=Page[CompanyOut], status_code=status.HTTP_200_OK)
-def list_companies(
+@router.get("/", response_model=Page[GroupOut], status_code=status.HTTP_200_OK)
+def list_groups(
         search_term: Optional[str] = Query(None),
         params: Params = Depends(),
         db: Session = Depends(get_db),
@@ -59,78 +59,78 @@ def list_companies(
     return paginate(query, params)
 
 
-@router.get("/{company_id}", response_model=CompanyOut, status_code=status.HTTP_200_OK)
+@router.get("/{group_id}", response_model=GroupOut, status_code=status.HTTP_200_OK)
 def get_company(
-        company_id: UUID,
+        group_id: UUID,
         db: Session = Depends(get_db),
         current_user=Depends(get_current_user)):
-    company = db.query(Company).filter_by(id=company_id,owner_id=current_user.id).first()
-    if not company:
+    group = db.query(Company).filter_by(id=group_id,owner_id=current_user.id).first()
+    if not group:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
-    return company
+    return group
 
 
-@router.get("/{company_id}/socials")
+@router.get("/{group_id}/socials")
 def get_socials(
-        company_id: uuid.UUID,
+        group_id: uuid.UUID,
         current_user=Depends(get_current_user),
         db: Session = Depends(get_db)
 ):
-    company = db.query(Company).filter_by(id=company_id, owner_id=current_user.id).first()
-    if not company:
+    group = db.query(Company).filter_by(id=group_id, owner_id=current_user.id).first()
+    if not group:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
     return {
-        "google": company.google,
-        "facebook": company.facebook,
-        "instagram": company.instagram,
-        "tiktok": company.tiktok,
-        "linkedin": company.linkedin,
-        "booksy": company.booksy,
-        "znany_lekarz": company.znany_lekarz
+        "google": group.google,
+        "facebook": group.facebook,
+        "instagram": group.instagram,
+        "tiktok": group.tiktok,
+        "linkedin": group.linkedin,
+        "booksy": group.booksy,
+        "znany_lekarz": group.znany_lekarz
     }
 
 
-@router.put("/{company_id}", response_model=CompanyOut)
-def update_company(
-        company_id: UUID,
-        company_update: CompanyUpdate,
+@router.put("/{group_id}", response_model=GroupOut)
+def update_group(
+        group_id: UUID,
+        group_update: GroupUpdate,
         db: Session = Depends(get_db),
         current_user=Depends(get_current_user)):
 
-    company = db.query(Company).filter_by(id=company_id, owner_id=current_user.id).first()
-    if not company:
+    group = db.query(Company).filter_by(id=group_id, owner_id=current_user.id).first()
+    if not group:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
 
-    if company_update.name is not None:
-        company.name = company_update.name
-    if company_update.description is not None:
-        company.description = company_update.description
-    if company_update.facebook_url is not None:
-        company.facebook_url = company_update.facebook_url
-    if company_update.instagram_link is not None:
-        company.instagram_link = company_update.instagram_link
-    if company_update.linkedin_link is not None:
-        company.linkedin_link = company_update.linkedin_link
-    if company_update.tiktok_link is not None:
-        company.tiktok_link = company_update.tiktok_link
-    if company_update.znany_lekarz is not None:
-        company.znany_lekarz = company_update.znany_lekarz
-    if company_update.booksy_link is not None:
-        company.booksy_link = company_update.booksy_link
+    if group_update.name is not None:
+        group.name = group_update.name
+    if group_update.description is not None:
+        group.description = group_update.description
+    if group_update.facebook_url is not None:
+        group.facebook_url = group_update.facebook_url
+    if group_update.instagram_link is not None:
+        group.instagram_link = group_update.instagram_link
+    if group_update.linkedin_link is not None:
+        group.linkedin_link = group_update.linkedin_link
+    if group_update.tiktok_link is not None:
+        group.tiktok_link = group_update.tiktok_link
+    if group_update.znany_lekarz is not None:
+        group.znany_lekarz = group_update.znany_lekarz
+    if group_update.booksy_link is not None:
+        group.booksy_link = group_update.booksy_link
 
     db.commit()
-    db.refresh(company)
-    return company
+    db.refresh(group)
+    return group
 
 
-@router.delete("/{company_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_company(
-        company_id: UUID,
+@router.delete("/{group_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_group(
+        group_id: UUID,
         db: Session = Depends(get_db),
         current_user=Depends(get_current_user)):
-    company = db.query(Company).filter_by(id=company_id, owner_id=current_user.id).first()
-    if not company:
+    group = db.query(Company).filter_by(id=group_id, owner_id=current_user.id).first()
+    if not group:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
-    db.delete(company)
+    db.delete(group)
     db.commit()
     return

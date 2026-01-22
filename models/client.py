@@ -13,7 +13,7 @@ class Client(Base):
     email = Column(String(255))
     phone = Column(String(20))
     service = Column(String(255))
-    note = Column(String(255))
+    note = Column(String(1000))
     company_id = Column(UUID(as_uuid=True), ForeignKey('companies.id', ondelete='CASCADE'), nullable=False)
 
     company = relationship("Company", back_populates="clients")

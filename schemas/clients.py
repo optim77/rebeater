@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from schemas.common.types import ClientName, ClientEmail, ClientPhone
+from schemas.common.types import ClientName, ClientEmail, ClientPhone, TextField
 import uuid
 class CreateClient(BaseModel):
     name: ClientName
@@ -12,6 +12,7 @@ class UpdateClient(BaseModel):
     surname: ClientName | None = None
     email: ClientEmail | None = None
     phone: ClientPhone | None = None
+    note: TextField | None = None
 
 class ClientOut(BaseModel):
     id: uuid.UUID
@@ -19,6 +20,7 @@ class ClientOut(BaseModel):
     surname: str | None = None
     email: str
     phone: str | None
+    note: str | None = None
 
     class Config:
         from_attributes = True

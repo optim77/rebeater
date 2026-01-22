@@ -46,3 +46,6 @@ def validate_company_name(value: str) -> str:
     if not COMPANY_REGEX.fullmatch(value):
         raise ValueError("Company name includes forbidden characters")
     return value
+
+def normalize_text(value: str) -> str:
+    return value.strip()

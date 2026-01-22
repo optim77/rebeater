@@ -316,8 +316,6 @@ def sms_message_details(
         survey_answer=message.survey_result,
         completed=message.completed,
         completed_at=message.completed_at,
-        service_id=message.service_id,
-        service_name=service.name if service else None,
         is_redirect=message.is_redirect
     )
 

@@ -48,16 +48,15 @@ def create_survey(
 
 @router.get("/{company_id}/list", response_model=Page[SurveyOutput])
 def get_surveys(
-        company_id: uuid.UUID,
-        search: str | None = Query(None),
+        search_term: str | None = Query(None),
         params: Params = Depends(),
         db: Session = Depends(get_db),
         _: None = Depends(validate_company_access)
 ):
     query = db.query(Survey).order_by(Survey.created_at.desc())
 
-    if search:
-        query = query.filter(Survey.name.ilike(f"%{search}%"))
+    if search_term:
+        query = query.filter(Survey.name.ilike(f"%{search_term}%"))
 
     return paginate(query, params)
 

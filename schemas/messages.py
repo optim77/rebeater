@@ -134,6 +134,4 @@ class MessageOutput(BaseModel):
     survey_answer: Optional[dict[str, str | int]]
     completed: bool | None = None
     completed_at: datetime | None = None
-    service_id: uuid.UUID | None = None
-    service_name: str | None = None
     is_redirect: bool | None = None
